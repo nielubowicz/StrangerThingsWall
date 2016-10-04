@@ -8,18 +8,34 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, UITextFieldDelegate {
 
+    @IBOutlet weak var positionSlider: UISlider!
+    
+    var bluetooth: BTDiscovery?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
+        NotificationCenter.default.addObserver(self, selector: #selector(connectionChanged(_:)), name: NSNotification.Name(rawValue:RWT_BLE_SERVICE_CHANGED_STATUS_NOTIFICATION), object: nil)
+        
+        self.bluetooth = BTDiscovery()
+        self.bluetooth?.startScanning()
     }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    
+    @objc func connectionChanged(_ notification: Notification) {
+        guard let connectionDetails = notification.object as? [String : AnyObject] else { return }
+        guard let connected = connectionDetails["isConnected"] as? Bool else { return }
+        
+        let color = connected ? UIColor.green : UIColor.red
+        DispatchQueue.main.async {
+            self.view.backgroundColor = color
+        }
     }
-
-
+    
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        guard let char = string.utf8CString.first else { return false }
+        self.bluetooth?.bleService?.write(character: UInt8(char))
+        return true
+    }
+    
 }
-
