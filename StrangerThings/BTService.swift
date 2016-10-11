@@ -13,6 +13,11 @@ class BTService: NSObject {
     
     let peripheral: CBPeripheral
     var positionCharacteristic: CBCharacteristic?
+    var writeData: [UInt8] = []
+    internal var inFlight: Bool = false
+    
+    internal var queue: DispatchQueue = DispatchQueue(label: "bluetooth")
+    internal var timer: Timer?
     
     init(peripheral: CBPeripheral) {
         self.peripheral = peripheral
@@ -59,22 +64,33 @@ extension BTService: CBPeripheralDelegate {
             }
         }
     }
+    
+    @objc internal func dequeCharacter() {
+        self.timer = nil
+        guard let character = self.writeData.first else { return }
+        self.writeData.removeFirst()
+        self.writeBLE(character: character)
+        if self.writeData.count > 0 {
+            self.timer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(dequeCharacter), userInfo: nil, repeats: false)
+        }
+    }
 }
 
 // MARK - Private
 extension BTService {
-    internal func write(character: UInt8) {
+    public func write(character: UInt8) {
+        self.writeData.append(character)
+        guard self.timer == nil else { return }
+        self.timer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(dequeCharacter), userInfo: nil, repeats: false)
+        self.writeData.removeFirst()
+        self.writeBLE(character: character)
+    }
+    
+    internal func writeBLE(character: UInt8) {
         var character = character
         guard let positionCharacteristic = self.positionCharacteristic else { return }
         let data = Data(bytes: &character, count: MemoryLayout<UInt8>.size)
-        self.peripheral.writeValue(data, for: positionCharacteristic, type: CBCharacteristicWriteType.withResponse)
-    }
-    
-    internal func write(position: UInt8) {
-        var position = position
-        guard let positionCharacteristic = self.positionCharacteristic else { return }
-        let data = Data(bytes: &position, count: MemoryLayout<UInt8>.size)
-        self.peripheral.writeValue(data, for: positionCharacteristic, type: CBCharacteristicWriteType.withResponse)
+        self.peripheral.writeValue(data, for: positionCharacteristic, type: .withResponse)
     }
     
     internal func sendBTServiceNotificationWithIsBluetoothConnected(_ connected: Bool) {

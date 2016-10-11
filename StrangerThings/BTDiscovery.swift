@@ -10,7 +10,9 @@ import CoreBluetooth
 
 class BTDiscovery: NSObject {
     
+    private(set) var queue: DispatchQueue?
     var centralManager: CBCentralManager?
+    var peripheralManager: CBPeripheralManager?
     var peripheralBLE: CBPeripheral?
     var bleService: BTService? {
         willSet {
@@ -22,9 +24,10 @@ class BTDiscovery: NSObject {
     }
     
     override init() {
-        let queue = DispatchQueue(label: "com.strangerthings")
+        self.queue = DispatchQueue(label: "com.strangerthings")
         super.init()
-        self.centralManager = CBCentralManager(delegate: self, queue: queue)
+        self.centralManager = CBCentralManager(delegate: self, queue: self.queue)
+        self.peripheralManager = CBPeripheralManager(delegate: self, queue: self.queue)
     }
     
     func startScanning() {
@@ -37,6 +40,7 @@ class BTDiscovery: NSObject {
     }
 }
 
+// MARK: - CBCentralManagerDelegate
 extension BTDiscovery: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
         // Be sure to retain the peripheral or it will fail during connection.
@@ -45,8 +49,8 @@ extension BTDiscovery: CBCentralManagerDelegate {
         guard let name = peripheral.name, name.characters.count > 0 else { return }
         //        if self.peripheralBLE?.state == .disconnected {
         self.peripheralBLE = peripheral
-        self.bleService = nil
         
+        self.bleService = nil
         self.centralManager?.connect(peripheral, options: nil)
         //        }
     }
@@ -84,4 +88,10 @@ extension BTDiscovery: CBCentralManagerDelegate {
             break
         }
     }
+}
+
+// MARK: - CBPeripheralManagerDelegate
+extension BTDiscovery: CBPeripheralManagerDelegate {
+    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) { }
+
 }

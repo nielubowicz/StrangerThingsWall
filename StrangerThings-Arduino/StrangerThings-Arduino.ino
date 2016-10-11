@@ -65,7 +65,9 @@ void setup() {
   blePeripheral.begin();
 
   Serial.println("BLE LED Peripheral");
+}
 
+void loop() {
   // listen for BLE peripherals to connect:
   BLECentral central = blePeripheral.central();
 
@@ -75,23 +77,18 @@ void setup() {
     // print the central's MAC address:
     Serial.println(central.address());
   }
-}
-
-void loop() {
-  // listen for BLE peripherals to connect:
-  BLECentral central = blePeripheral.central();
   
   // while the central is still connected to peripheral:
-  if (central.connected()) {
+  while(central.connected()) {
       // if the remote device wrote to the characteristic,
-      // use the value to control the LED:
     if (switchCharacteristic.written()) {
-      Serial.println((char)switchCharacteristic.value());
-      if (switchCharacteristic.value() > 100) {   // any value other than 0
-        digitalWrite(ledPin, HIGH);         // will turn the LED on
-      } else {                              // a 0 value
-        digitalWrite(ledPin, LOW);          // will turn the LED off
-      }
+      Serial.println("value written");
+      char value = (char)switchCharacteristic.value();
+      Serial.println(value);
+      int sel[3];
+      selectForChar(value, sel);
+      blink(bankForChar(value), sel);
+      switchCharacteristic.setValue('\0');
     }
   }
 }
@@ -126,7 +123,7 @@ int bankForChar(uint8_t c) {
   return bank;
 }
 
-void selectForChar(int *sel, uint8_t c) {
+void selectForChar(uint8_t c, int *sel) {
   switch (c) {
     case 97:
     case 105:
