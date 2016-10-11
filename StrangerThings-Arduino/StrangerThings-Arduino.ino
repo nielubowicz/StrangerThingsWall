@@ -1,20 +1,5 @@
 /*
-  Blink
-  Turns on an LED on for one second, then off for one second, repeatedly.
 
-  Most Arduinos have an on-board LED you can control. On the UNO, MEGA and ZERO 
-  it is attached to digital pin 13, on MKR1000 on pin 6. LED_BUILTIN takes care 
-  of use the correct LED pin whatever is the board used.
-  If you want to know what pin the on-board LED is connected to on your Arduino model, check
-  the Technical Specs of your board  at https://www.arduino.cc/en/Main/Products
-  
-  This example code is in the public domain.
-
-  modified 8 May 2014
-  by Scott Fitzgerald
-  
-  modified 2 Sep 2016
-  by Arturo Guadalupi
 */
 
 #include <CurieBLE.h>
@@ -58,6 +43,12 @@ void setup() {
   blePeripheral.addAttribute(ledService);
   blePeripheral.addAttribute(switchCharacteristic);
 
+  blePeripheral.setEventHandler(BLEConnected, blePeripheralConnectHandler);
+  blePeripheral.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
+
+  // assign event handlers for characteristic
+  switchCharacteristic.setEventHandler(BLEWritten, switchCharacteristicWritten);
+
   // set the initial value for the characeristic:
   switchCharacteristic.setValue(0);
 
@@ -68,29 +59,27 @@ void setup() {
 }
 
 void loop() {
-  // listen for BLE peripherals to connect:
-  BLECentral central = blePeripheral.central();
+  blePeripheral.poll();
+}
 
-  // if a central is connected to peripheral:
-  if (central) {
-    Serial.print("Connected to central: ");
-    // print the central's MAC address:
-    Serial.println(central.address());
-  }
-  
-  // while the central is still connected to peripheral:
-  while(central.connected()) {
-      // if the remote device wrote to the characteristic,
-    if (switchCharacteristic.written()) {
-      Serial.println("value written");
+void blePeripheralConnectHandler(BLECentral& central) {
+  // central connected event handler
+  Serial.print("Connected event, central: ");
+  Serial.println(central.address());
+}
+
+void blePeripheralDisconnectHandler(BLECentral& central) {
+  // central disconnected event handler
+  Serial.print("Disconnected event, central: ");
+  Serial.println(central.address());
+}
+
+void switchCharacteristicWritten(BLECentral& central, BLECharacteristic& characteristic) {      
       char value = (char)switchCharacteristic.value();
       Serial.println(value);
-      int sel[3];
-      selectForChar(value, sel);
-      blink(bankForChar(value), sel);
-      switchCharacteristic.setValue('\0');
-    }
-  }
+//      int sel[3];
+//      selectForChar(value, sel);
+//      blink(bankForChar(value), sel);
 }
 
 void blink(int bank, int* sel) {

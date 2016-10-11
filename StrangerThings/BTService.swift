@@ -69,10 +69,12 @@ extension BTService: CBPeripheralDelegate {
         self.timer = nil
         guard let character = self.writeData.first else { return }
         self.writeData.removeFirst()
-        self.writeBLE(character: character)
-        if self.writeData.count > 0 {
-            self.timer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(dequeCharacter), userInfo: nil, repeats: false)
-        }
+        self.queue.async {
+            self.writeBLE(character: character)
+        }        
+        
+        guard self.writeData.count > 0 else { return }
+        self.timer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(self.dequeCharacter), userInfo: nil, repeats: false)
     }
 }
 
@@ -82,8 +84,6 @@ extension BTService {
         self.writeData.append(character)
         guard self.timer == nil else { return }
         self.timer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(dequeCharacter), userInfo: nil, repeats: false)
-        self.writeData.removeFirst()
-        self.writeBLE(character: character)
     }
     
     internal func writeBLE(character: UInt8) {
