@@ -14,6 +14,9 @@ class BTDiscovery: NSObject {
     var centralManager: CBCentralManager?
     var peripheralManager: CBPeripheralManager?
     var peripheralBLE: CBPeripheral?
+    
+    weak var delegate: BTServiceDelegate?
+
     var bleService: BTService? {
         willSet {
             self.bleService?.reset()
@@ -57,7 +60,7 @@ extension BTDiscovery: CBCentralManagerDelegate {
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         if peripheral == self.peripheralBLE {
-            self.bleService = BTService(peripheral: peripheral)
+            self.bleService = BTService(peripheral: peripheral, delegate: self.delegate)
         }
         
         self.centralManager?.stopScan()

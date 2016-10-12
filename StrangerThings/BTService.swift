@@ -9,6 +9,12 @@
 import Foundation
 import CoreBluetooth
 
+protocol BTServiceDelegate: class {
+    func peripheral(peripheral: CBPeripheral, didConnect connected: Bool)
+    func peripheral(peripheral: CBPeripheral, didWriteValue value: AnyObject?)
+}
+
+
 class BTService: NSObject {
     
     let peripheral: CBPeripheral
@@ -19,10 +25,13 @@ class BTService: NSObject {
     internal var queue: DispatchQueue = DispatchQueue(label: "bluetooth")
     internal var timer: Timer?
     
-    init(peripheral: CBPeripheral) {
+    weak var delegate: BTServiceDelegate?
+    
+    init(peripheral: CBPeripheral, delegate: BTServiceDelegate?) {
         self.peripheral = peripheral
         super.init()
         self.peripheral.delegate = self
+        self.delegate = delegate
     }
     
     deinit {
@@ -65,6 +74,10 @@ extension BTService: CBPeripheralDelegate {
         }
     }
     
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        self.delegate?.peripheral(peripheral: peripheral, didWriteValue: characteristic.value as AnyObject)
+    }
+    
     @objc internal func dequeCharacter() {
         self.timer = nil
         guard let character = self.writeData.first else { return }
@@ -73,8 +86,10 @@ extension BTService: CBPeripheralDelegate {
             self.writeBLE(character: character)
         }        
         
-        guard self.writeData.count > 0 else { return }
-        self.timer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(self.dequeCharacter), userInfo: nil, repeats: false)
+        if self.writeData.count == 0 {
+            self.timer?.invalidate()
+            self.timer = nil
+        }
     }
 }
 
@@ -83,7 +98,7 @@ extension BTService {
     public func write(character: UInt8) {
         self.writeData.append(character)
         guard self.timer == nil else { return }
-        self.timer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(dequeCharacter), userInfo: nil, repeats: false)
+        self.timer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(dequeCharacter), userInfo: nil, repeats: true)
     }
     
     internal func writeBLE(character: UInt8) {
@@ -94,8 +109,7 @@ extension BTService {
     }
     
     internal func sendBTServiceNotificationWithIsBluetoothConnected(_ connected: Bool) {
-        let connectionDetails = ["isConnected" : connected]
-        NotificationCenter.default.post(name: NSNotification.Name(rawValue: RWT_BLE_SERVICE_CHANGED_STATUS_NOTIFICATION), object: connectionDetails)
+        self.delegate?.peripheral(peripheral: self.peripheral, didConnect: connected)
     }
 }
 

@@ -77,9 +77,9 @@ void blePeripheralDisconnectHandler(BLECentral& central) {
 void switchCharacteristicWritten(BLECentral& central, BLECharacteristic& characteristic) {      
       char value = (char)switchCharacteristic.value();
       Serial.println(value);
-//      int sel[3];
-//      selectForChar(value, sel);
-//      blink(bankForChar(value), sel);
+      int sel[3];
+      selectForChar(value, sel);
+      blink(bankForChar(value), sel);
 }
 
 void blink(int bank, int* sel) {
@@ -94,7 +94,7 @@ void blink(int bank, int* sel) {
 
   // turn off
   digitalWrite(bank, LOW);
-  delay(1000);
+  delay(500);
 }
 
 int bankForChar(uint8_t c) {
