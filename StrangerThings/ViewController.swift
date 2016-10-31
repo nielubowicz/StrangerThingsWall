@@ -28,14 +28,19 @@ class ViewController: UIViewController, UITextFieldDelegate {
         self.bluetooth?.startScanning()
     }
     
-    
-    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        guard let char = string.utf8CString.first else { return false }
-        self.textToSend.append(string)
-        self.bluetooth?.bleService?.write(character: UInt8(char))
-        return true
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return false
     }
     
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        guard let string = textField.text?.lowercased() else { return }
+        self.textToSend.append(string)
+        string.utf8CString.forEach { (char) in
+            self.bluetooth?.bleService?.write(character: UInt8(char))
+        }
+        textField.text = nil
+    }
 }
 
 extension ViewController: BTServiceDelegate {

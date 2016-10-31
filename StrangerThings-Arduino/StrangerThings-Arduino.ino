@@ -90,7 +90,7 @@ void blink(int bank, int* sel) {
 
   // write bank
   digitalWrite(bank, HIGH);
-  delay(1000);
+  delay(750);
 
   // turn off
   digitalWrite(bank, LOW);
