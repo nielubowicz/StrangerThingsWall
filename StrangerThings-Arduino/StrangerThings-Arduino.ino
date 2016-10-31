@@ -146,28 +146,28 @@ void selectForChar(uint8_t c, int *sel) {
     break;
     case 101:
     case 109:
-    case 117:
+    case 118:
     sel[0] = 0;
     sel[1] = 0;
     sel[2] = 1;
     break;
     case 102:
     case 110:
-    case 118:
+    case 119:
     sel[0] = 1;
     sel[1] = 0;
     sel[2] = 1;
     break;
     case 103:
     case 111:
-    case 119:
+    case 120:
     sel[0] = 0;
     sel[1] = 1;
     sel[2] = 1;
     break;
     case 104:
     case 112:
-    case 120:
+    case 117:
     sel[0] = 1;
     sel[1] = 1;
     sel[2] = 1;
